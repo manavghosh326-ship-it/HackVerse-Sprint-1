@@ -7,12 +7,15 @@ export async function runAnalysis(
   feedOutage: boolean,
   userId: string
 ): Promise<AnalysisResponse> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+
   const endpoint = `${SUPABASE_URL}/functions/v1/analyze`;
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Authorization: `Bearer ${session.access_token}`,
     },
     body: JSON.stringify({
       ticker,

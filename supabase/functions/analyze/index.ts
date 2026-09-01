@@ -6,11 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const GEMINI_MODEL = "gemini-3.7-flash";
+const GEMINI_MODEL = "gemini-3.5-flash-lite";;
 const EMBED_MODEL = "gemini-embedding-001";
 const EMBED_DIM = 768;
 
-// ─── Types ───────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────
 
 interface AgentResult {
   agent_name: string;
@@ -44,7 +44,7 @@ interface FilingRow {
   excerpt: string;
 }
 
-// ─── Gemini helpers ──────────────────────────────────────
+// ─── Gemini helpers ─────────────────────────────────
 
 async function geminiGenerate(prompt: string, systemInstruction?: string): Promise<string> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -108,7 +108,7 @@ async function geminiEmbed(text: string): Promise<number[]> {
   return embedding;
 }
 
-// ─── Agent implementations ───────────────────────────────
+// ─── Agent implementations ─────────────────────────────────────────
 
 async function runTechnicalAgent(
   supabase: any,
@@ -375,7 +375,7 @@ function parseAgentJson(text: string): any {
   }
 }
 
-// ─── Synthesis ───────────────────────────────────────────
+// ─── Synthesis ─────────────────────────────────────────
 
 async function runSynthesis(
   ticker: string,
@@ -418,7 +418,7 @@ Respond in this exact JSON format:
   };
 }
 
-// ─── Main handler ────────────────────────────────────────
+// ─── Main handler ─────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -435,8 +435,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Create a supabase client with the user's token for RLS-scoped writes
-    const supabase = createClient(supabase_url, supabase_key);
+    // Create a supabase client authenticated as the calling user, so RLS (auth.uid()) works
+    const authHeader = req.headers.get("Authorization") || "";
+    const supabase = createClient(supabase_url, supabase_key, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     // 1. Create session
     const { data: session, error: sessionErr } = await supabase
